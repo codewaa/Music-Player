@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 5 JavaScript Music Player</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="app">
+        <section class="hero">
+            <p class="eyebrow">Chapter 5 JavaScript Mini Project</p>
+            <h1>Mini Music Player</h1>
+            <p>Search a song, pick a result, and play real music previews using HTML, CSS, and JavaScript.</p>
+        </section>
+
+        <section class="player-layout">
+            <section class="now-playing">
+                <div class="cover" id="coverArt">♪</div>
+                <p class="eyebrow" id="sourceLabel">Demo Track</p>
+                <h2 id="trackTitle">Sunny Classroom Beat</h2>
+                <p id="trackArtist">JavaScript Demo</p>
+
+                <audio id="audioPlayer" controls></audio>
+
+                <div class="player-actions">
+                    <button type="button" id="playButton">Play</button>
+                    <button type="button" class="ghost-button" id="pauseButton">Pause</button>
+                </div>
+            </section>
+
+            <section class="search-panel">
+                <form id="searchForm">
+                    <label for="searchInput">Search music</label>
+                    <div class="search-row">
+                        <input type="text" id="searchInput" placeholder="Try happy, focus, kesariya">
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
+
+                <div class="status" id="statusText">Search uses the free iTunes Search API. Demo tracks appear before the first search.</div>
+                <div class="result-list" id="resultList"></div>
+            </section>
+
+            <section class="challenge-card">
+                <p class="eyebrow">Student Challenge</p>
+                <ul>
+                    <li>Add one new demo track.</li>
+                    <li>Change the player color theme.</li>
+                    <li>Show song duration using JavaScript.</li>
+                    <li>Add a favorite button.</li>
+                </ul>
+            </section>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
