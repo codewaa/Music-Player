@@ -1,188 +1,385 @@
+// ===============================
+// Get elements from the HTML page
+// ===============================
+
+// Form used to search music
 const searchForm = document.querySelector("#searchForm");
+
+// Input box where user types song name
 const searchInput = document.querySelector("#searchInput");
+
+// Container where search results will appear
 const resultList = document.querySelector("#resultList");
+
+// Text area for status messages
 const statusText = document.querySelector("#statusText");
 
+// Music player UI elements
 const coverArt = document.querySelector("#coverArt");
 const sourceLabel = document.querySelector("#sourceLabel");
 const trackTitle = document.querySelector("#trackTitle");
 const trackArtist = document.querySelector("#trackArtist");
+
+// Audio element used to play music
 const audioPlayer = document.querySelector("#audioPlayer");
+
+// Play/Pause buttons
 const playButton = document.querySelector("#playButton");
 const pauseButton = document.querySelector("#pauseButton");
 
+// ===============================
+// API URL
+// ===============================
+
+// iTunes API used to search songs
 const apiUrl = "https://itunes.apple.com/search";
 
+// ===============================
+// Demo songs (used if API fails)
+// ===============================
+
 const demoTracks = [
-    { title: "Sunny Classroom Beat", artist: "JavaScript Demo", mood: "happy", color: "#f6c453", note: 262 },
-    { title: "Focus Mode Loops", artist: "Code Studio", mood: "focus", color: "#9ad7ca", note: 330 },
-    { title: "Soft Study Night", artist: "HTML CSS Band", mood: "study", color: "#c8b6ff", note: 392 },
-    { title: "Tiny Party Pop", artist: "Browser Beats", mood: "party", color: "#ffafcc", note: 440 }
+    {
+        title: "Sunny Classroom Beat",
+        artist: "JavaScript Demo",
+        mood: "happy",
+        color: "#f6c453",
+        note: 262
+    },
+    {
+        title: "Focus Mode Loops",
+        artist: "Code Studio",
+        mood: "focus",
+        color: "#9ad7ca",
+        note: 330
+    },
+    {
+        title: "Soft Study Night",
+        artist: "HTML CSS Band",
+        mood: "study",
+        color: "#c8b6ff",
+        note: 392
+    }
 ];
 
+// ============================================
+// Create a simple sound using JavaScript only
+// ============================================
+
+// This function generates a WAV sound dynamically
+// using a frequency number (musical note)
 function makeTone(frequency) {
-    const sampleRate = 44100;
-    const seconds = 3;
+
+    const sampleRate = 44100; // audio quality
+    const seconds = 2; // sound duration
     const samples = sampleRate * seconds;
+
+    // Create audio byte array
     const bytes = new Uint8Array(44 + samples * 2);
+
     const view = new DataView(bytes.buffer);
 
+    // WAV file headers
     writeText(bytes, 0, "RIFF");
     view.setUint32(4, 36 + samples * 2, true);
+
     writeText(bytes, 8, "WAVEfmt ");
     view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
+
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, 1, true); // mono audio
+
     view.setUint32(24, sampleRate, true);
     view.setUint32(28, sampleRate * 2, true);
+
     view.setUint16(32, 2, true);
     view.setUint16(34, 16, true);
+
     writeText(bytes, 36, "data");
     view.setUint32(40, samples * 2, true);
 
+    // Generate sound wave
     for (let i = 0; i < samples; i++) {
-        const wave = Math.sin((i / sampleRate) * frequency * Math.PI * 2);
+
+        // Sine wave calculation
+        const wave =
+            Math.sin((i / sampleRate) * frequency * Math.PI * 2);
+
+        // Reduce sound gradually (fade out)
         const fade = 1 - i / samples;
-        view.setInt16(44 + i * 2, wave * fade * 24000, true);
+
+        // Save audio sample
+        view.setInt16(
+            44 + i * 2,
+            wave * fade * 24000,
+            true
+        );
     }
 
+    // Convert bytes into string
     let binary = "";
-    bytes.forEach(function (byte) {
-        binary += String.fromCharCode(byte);
-    });
 
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+
+    // Return playable audio URL
     return `data:audio/wav;base64,${btoa(binary)}`;
 }
 
+// ============================================
+// Write text into byte array
+// ============================================
+
+// Used when creating WAV file headers
 function writeText(bytes, start, text) {
+
     for (let i = 0; i < text.length; i++) {
         bytes[start + i] = text.charCodeAt(i);
     }
 }
 
+// ============================================
+// Clean special HTML characters
+// ============================================
+
+// Converts &quot; into "
+// Converts &amp; into &
 function cleanText(text) {
-    return String(text).replaceAll("&quot;", "\"").replaceAll("&amp;", "&");
+
+    return String(text)
+        .replaceAll("&quot;", '"')
+        .replaceAll("&amp;", "&");
 }
 
-function playTrack(track, shouldPlay = true) {
+// ============================================
+// Play selected track
+// ============================================
+
+function playTrack(track, autoPlay = true) {
+
+    // Update UI text
     trackTitle.textContent = cleanText(track.title);
     trackArtist.textContent = track.artist;
     sourceLabel.textContent = track.source;
-    audioPlayer.src = track.audio;
-    coverArt.textContent = track.icon;
-    coverArt.style.background = track.color;
 
+    // Set audio source
+    audioPlayer.src = track.audio;
+
+    // Set cover design
+    coverArt.style.background = track.color;
+    coverArt.textContent = track.icon;
+
+    // If image exists, show image instead of icon
     if (track.image) {
-        coverArt.style.backgroundImage = `url(${track.image})`;
+
+        coverArt.style.backgroundImage =
+            `url(${track.image})`;
+
         coverArt.style.backgroundSize = "cover";
+
         coverArt.textContent = "";
+
     } else {
+
         coverArt.style.backgroundImage = "";
     }
 
-    if (shouldPlay) {
+    // Automatically play music
+    if (autoPlay) {
         audioPlayer.play();
     }
 }
 
+// ============================================
+// Show tracks on screen
+// ============================================
+
 function renderTracks(tracks) {
+
+    // Clear old results
     resultList.innerHTML = "";
 
-    tracks.forEach(function (track) {
+    // Create card for every song
+    tracks.forEach(track => {
+
         const card = document.createElement("article");
+
         card.className = "track-card";
+
+        // Track HTML
         card.innerHTML = `
             <div class="track-icon">${track.icon}</div>
+
             <div>
                 <h3>${cleanText(track.title)}</h3>
                 <p>${track.artist}</p>
             </div>
-            <button type="button">Play</button>
+
+            <button>Play</button>
         `;
 
-        card.querySelector("button").addEventListener("click", function () {
-            playTrack(track);
-        });
+        // Play selected song
+        card.querySelector("button")
+            .addEventListener("click", () => {
+                playTrack(track);
+            });
 
+        // Add card to page
         resultList.appendChild(card);
     });
 }
 
+// ============================================
+// Create demo search results
+// ============================================
+
 function getDemoResults(searchText) {
+
     const query = searchText.toLowerCase();
-    const results = demoTracks.filter(function (track) {
-        return track.title.toLowerCase().includes(query) || track.mood.includes(query);
-    });
 
-    const tracks = results.length > 0 ? results : demoTracks;
+    // Filter matching tracks
+    const results = demoTracks.filter(track =>
+        track.title.toLowerCase().includes(query) ||
+        track.mood.includes(query)
+    );
 
-    return tracks.map(function (track) {
-        return {
-            title: track.title,
-            artist: track.artist,
-            audio: makeTone(track.note),
-            color: track.color,
-            icon: "♪",
-            source: "Demo Track"
-        };
-    });
+    // If no result found, show all tracks
+    const tracks =
+        results.length ? results : demoTracks;
+
+    // Convert demo tracks into playable tracks
+    return tracks.map(track => ({
+
+        title: track.title,
+        artist: track.artist,
+
+        // Generate fake audio
+        audio: makeTone(track.note),
+
+        color: track.color,
+        icon: "♪",
+
+        source: "Demo Track"
+    }));
 }
 
+// ============================================
+// Search music using iTunes API
+// ============================================
+
 async function searchMusic(searchText) {
+
     statusText.textContent = "Searching music...";
 
     try {
-        const response = await fetch(`${apiUrl}?term=${encodeURIComponent(searchText)}&media=music&entity=song&limit=12`);
+
+        // API request
+        const response = await fetch(
+            `${apiUrl}?term=${encodeURIComponent(searchText)}&media=music&entity=song&limit=12`
+        );
+
+        // Check API success
         if (!response.ok) {
-            throw new Error("API is not responding");
+            throw new Error("API error");
         }
 
+        // Convert response to JSON
         const data = await response.json();
-        const songs = data.results || [];
-        const apiTracks = songs.map(function (song) {
-            return {
+
+        // Convert API songs into app format
+        const tracks = data.results
+            .map(song => ({
+
                 title: song.trackName,
                 artist: song.artistName,
+
+                // Preview audio
                 audio: song.previewUrl,
-                image: song.artworkUrl100 ? song.artworkUrl100.replace("100x100", "600x600") : "",
+
+                // Large album image
+                image: song.artworkUrl100
+                    ?.replace("100x100", "600x600"),
+
                 color: "#f6c453",
                 icon: "♪",
-                source: "iTunes Preview"
-            };
-        }).filter(function (track) {
-            return track.audio !== "";
-        });
 
-        if (apiTracks.length === 0) {
-            throw new Error("No playable API result");
+                source: "iTunes Preview"
+            }))
+
+            // Remove tracks without audio
+            .filter(track => track.audio);
+
+        // If no songs found
+        if (!tracks.length) {
+            throw new Error("No playable tracks");
         }
 
-        statusText.textContent = "Showing real music previews from the iTunes Search API.";
-        renderTracks(apiTracks);
-        playTrack(apiTracks[0]);
-    } catch (error) {
-        const demoResults = getDemoResults(searchText);
+        // Update status
+        statusText.textContent =
+            "Showing real music previews.";
 
-        statusText.textContent = "Music API is not available right now, so playable demo tracks are shown.";
+        // Display songs
+        renderTracks(tracks);
+
+        // Play first song
+        playTrack(tracks[0]);
+
+    } catch (error) {
+
+        // If API fails -> use demo tracks
+        const demoResults =
+            getDemoResults(searchText);
+
+        statusText.textContent =
+            "API unavailable. Showing demo tracks.";
+
         renderTracks(demoResults);
+
         playTrack(demoResults[0]);
+
         console.log(error);
     }
 }
 
-searchForm.addEventListener("submit", function (event) {
+// ============================================
+// Form submit event
+// ============================================
+
+searchForm.addEventListener("submit", event => {
+
+    // Prevent page reload
     event.preventDefault();
-    searchMusic(searchInput.value.trim() || "happy");
+
+    // Start search
+    searchMusic(
+        searchInput.value.trim() || "happy"
+    );
 });
 
-playButton.addEventListener("click", function () {
+// ============================================
+// Play button
+// ============================================
+
+playButton.addEventListener("click", () => {
     audioPlayer.play();
 });
 
-pauseButton.addEventListener("click", function () {
+// ============================================
+// Pause button
+// ============================================
+
+pauseButton.addEventListener("click", () => {
     audioPlayer.pause();
 });
 
+// ============================================
+// Load demo tracks on page start
+// ============================================
+
 const firstTracks = getDemoResults("");
+
 renderTracks(firstTracks);
+
+// Show first track without autoplay
 playTrack(firstTracks[0], false);
